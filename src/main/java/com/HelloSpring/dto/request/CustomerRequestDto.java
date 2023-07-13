@@ -35,7 +35,7 @@ public class CustomerRequestDto {
 	private Gender gender;
 	 @NotBlank(message = "password name should not be blank")
 	 @NotNull(message="password name should not be null")
-	 @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$")
+	 //@Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$")
 	 private String  password;
 	 @NotBlank(message = "confirmPassword name should not be blank")
 	 @NotNull(message="confirmPassword name should not be null")

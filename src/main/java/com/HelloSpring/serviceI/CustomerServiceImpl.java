@@ -3,12 +3,16 @@ package com.HelloSpring.serviceI;
 import java.time.LocalDate;
 import com.HelloSpring.GlobalException.*;
 import com.HelloSpring.GlobalException.ResourceNotFoundException;
+import com.HelloSpring.apiresponse.ApiResponse1;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.HelloSpring.dto.request.CustomerFnmLnmGenderDTO;
@@ -169,5 +173,21 @@ public class CustomerServiceImpl implements CustomerService{
 		return f;
 	}
 
+	
+	public ApiResponse1 display(Integer PageNo , Integer PageSize) {
+
+		Pageable p = PageRequest.of(PageNo,PageSize);
+		Page<Customer> pagepost = cr.findAll(p);
+		List<Customer> all = pagepost.getContent();
+	
+		ApiResponse1 apiresp = new ApiResponse1();
+		apiresp.setContent(all);
+		apiresp.setPageNumber(pagepost.getNumber());
+		apiresp.setPageSize(pagepost.getSize());
+		apiresp.setLastPage(pagepost.isLast());
+		apiresp.setTotalElement(pagepost.getNumberOfElements());
+		apiresp.setTotalPage(pagepost.getTotalPages());
+		return apiresp;
+	}
 
 }

@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.HelloSpring.apiresponse.ApiResponse;
+import com.HelloSpring.apiresponse.ApiResponse1;
 import com.HelloSpring.dto.request.CustomerLoginDTO;
 import com.HelloSpring.dto.request.CustomerRequestDto;
 import com.HelloSpring.model.Customer;
@@ -43,6 +45,7 @@ public class CustomerCer {
 	  return new ResponseEntity<ApiResponse> (apiResponse,HttpStatus.OK);
 	 }
 	 
+	 
 	 @PostMapping(value="/isValidUser")
 		public ResponseEntity<ApiResponse> isValidUser(@RequestBody  @Valid CustomerLoginDTO customerLogin)
 		{
@@ -71,11 +74,21 @@ public class CustomerCer {
     {
    	 log.info("Finding the Customer By LastName");
    	 List<CustomerFnmLnmGenderDTO > custom = cs.findByLastName(LastName);
-   	 System.out.println(LastName+"..........."+custom);
+   	 
    	 ApiResponse apiresponse = new ApiResponse(HttpStatus.OK.value(),"LastName user is there",custom);
    	 return new ResponseEntity<ApiResponse> (apiresponse,HttpStatus.OK);	 
     }
     
+    @GetMapping(value = "/display")
+    public ResponseEntity<ApiResponse> display(
+    		@RequestParam (value="PageNo",defaultValue = "0") Integer PageNo,
+    		@RequestParam (value="PageSize",defaultValue = "5") Integer PageSize
+    		) 
+    {
+		ApiResponse1 custom = cs.display(PageNo,PageSize);
+		 ApiResponse apiresponse = new ApiResponse(HttpStatus.OK.value(),"LastName user is there",custom);
+	   	 return new ResponseEntity<ApiResponse> (apiresponse,HttpStatus.OK);
+    }
      
 }
 

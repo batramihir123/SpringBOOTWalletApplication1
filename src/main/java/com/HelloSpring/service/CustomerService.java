@@ -3,6 +3,7 @@ package com.HelloSpring.service;
 
 
 
+import com.HelloSpring.apiresponse.ApiResponse1;
 import com.HelloSpring.dto.request.CustomerFnmLnmGenderDTO;
 import com.HelloSpring.dto.request.CustomerLoginDTO;
 import com.HelloSpring.dto.request.CustomerRequestDto;
@@ -19,7 +20,7 @@ public interface CustomerService {
 
 	
 	public Integer createCustomer(@Valid CustomerRequestDto customerRequest);
-
+   
 	public Customer getCustomerByCustId(int customerid);
 	public Customer getCustomerByCustId1(String CustEmailID);
 
@@ -33,4 +34,5 @@ public interface CustomerService {
 	public List<Customer> findByFirstNameIgnoreCase(String fn);
 	public List<CustomerFnmLnmGenderDTO> findByLastName(String lnm);
 	Boolean existsByEmailIdAndPassword(String email, String password);
+	public ApiResponse1 display(Integer PageNo,Integer pageSize);
 }

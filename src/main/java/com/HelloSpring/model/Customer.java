@@ -50,6 +50,9 @@ public class Customer {
 	@Transient
 	String confirmPassword;
 	private LocalDate registerationDate;
+
+	@Column(name = "expiryDate")
+	private LocalDate expiryDate;
 	
 	
 	@OneToMany(targetEntity=Account.class,mappedBy="customer")

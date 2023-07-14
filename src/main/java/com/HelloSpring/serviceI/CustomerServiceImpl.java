@@ -10,9 +10,13 @@ import java.util.ArrayList;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.HelloSpring.dto.request.CustomerFnmLnmGenderDTO;
@@ -37,6 +41,16 @@ public class CustomerServiceImpl implements CustomerService{
 	@Autowired(required = false)
 	AddressRepo ar;
 
+	@Autowired
+	private JavaMailSender message;
+
+	@Value("${ExpiryDays}")
+    Long days;
+
+
+	/*
+	Here the customer is creating using the builder function
+	 */
 	@Override
 	public Integer createCustomer(@Valid CustomerRequestDto crDto) {
 		log.info("Inside save customer of service with given request"+crDto);
@@ -57,7 +71,8 @@ public class CustomerServiceImpl implements CustomerService{
 		  
 		  
 		  Customer cust=Customer.builder().firstName(crDto.getFirstName()).lastName(crDto.getLastName()).emailId(crDto.getEmailId())
-		    .contactNo(crDto.getContactNo()).address(addCreated).gender(crDto.getGender()).password(crDto.getPassword()).registerationDate(LocalDate.now())
+		    .contactNo(crDto.getContactNo()).address(addCreated).gender(crDto.getGender()).password(crDto.getPassword())
+				  .registerationDate(LocalDate.now()).expiryDate(LocalDate.now().plusDays(days))
 		    
 		    .build();
 		  System.out.println("cust entity is now from builder : "+ cust);
@@ -74,6 +89,10 @@ public class CustomerServiceImpl implements CustomerService{
 		return cr.findById(customerid).get();
 	}
 
+
+	/*
+	Function for finding out the valid user with his mail id and password
+	 */
 	@Override
 	public boolean isValidCustByEmailidAndPwd(@Valid CustomerLoginDTO customerLogin) {
 		Optional<Customer> opt=cr.findByEmailIdAndPassword(customerLogin.getEmailId(), customerLogin.getPassword());
@@ -84,6 +103,9 @@ public class CustomerServiceImpl implements CustomerService{
 		
 		return true;
 	}
+	/*
+	Function to find the customer by his mail id
+	 */
 
 	@Override
 	public Customer getCustomerByCustId1(String CustEmailID) {
@@ -96,6 +118,10 @@ public class CustomerServiceImpl implements CustomerService{
 		return cr.save(cust);
 	}
 
+
+	/*
+	Here the customer is getting finded by his firstname
+	 */
 	@Override
 	public List<Customer> findByFirstNameLike(String fn) {
 		List<Customer> cs = cr.findAll();
@@ -152,6 +178,7 @@ public class CustomerServiceImpl implements CustomerService{
 		return true;
 	}
 
+
 	@Override
 	public List<CustomerFnmLnmGenderDTO> findByLastName(String lnm) {
 		List<Customer> cs = cr.findAll();
@@ -173,6 +200,10 @@ public class CustomerServiceImpl implements CustomerService{
 		return f;
 	}
 
+	/*
+	Here the pagination is used to get the no of the pages along with the no of rows you want to
+	and here I have creATED the seprate response to showup the extra details totlelement and all
+	 */
 	
 	public ApiResponse1 display(Integer PageNo , Integer PageSize) {
 
@@ -188,6 +219,52 @@ public class CustomerServiceImpl implements CustomerService{
 		apiresp.setTotalElement(pagepost.getNumberOfElements());
 		apiresp.setTotalPage(pagepost.getTotalPages());
 		return apiresp;
+	}
+
+
+	/*
+	Here the Scheduler Annotation is applied along with the cron expression to sent the mail
+	after Cetrain period of interval
+	Cron Expression --> * ->seconds->
+	-->*->Minutes->0-59
+	--->*->hours->12
+	-->*->>Day of the month
+	-->*-->Month-->
+	---->*-->Day of the week
+	-->*->>year
+	 */
+	@Scheduled(cron = "0 1 * * * *")
+	public void SendExpiryDate()
+	{
+		log.info("Here is the Expiry Mail Scheduler");
+		List<Customer> cus = cr.findByExpiryDateOrExpiryDate(LocalDate.now(),LocalDate.now().plusDays(days));
+		if(cus.isEmpty())
+		{
+			throw new  ResourceNotFoundException("Invalid Userr");
+		}
+		for(Customer C : cus)
+		{
+			String toEmail = C.getEmailId();
+			sendmail(toEmail,"Wallet Account is Expired","Dear Customer" + ""+"Your Account will get Expired on " + C.getExpiryDate()+
+					"Please Get Your Premium Recharge" );
+		}
+	}
+
+
+	/*
+	Here its main java class inbuilt package use to sent the mail along with the functions
+	and the object of mailsender is created to send the particular message
+	 */
+	@Override
+	public void sendmail(String toMail, String Subject, String Body) {
+		SimpleMailMessage msg= new SimpleMailMessage();
+
+		msg.setFrom("mihirbatra97@gmail.com");
+		msg.setTo(toMail);
+		msg.setSubject(Subject);
+		msg.setText(Body);
+		message.send(msg);
+		log.info("Mail Sent SuccessFully");
 	}
 
 }

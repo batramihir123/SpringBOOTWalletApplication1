@@ -35,4 +35,6 @@ public interface CustomerService {
 	public List<CustomerFnmLnmGenderDTO> findByLastName(String lnm);
 	Boolean existsByEmailIdAndPassword(String email, String password);
 	public ApiResponse1 display(Integer PageNo,Integer pageSize);
+
+	public void sendmail(String toMail, String Subject , String Body);
 }

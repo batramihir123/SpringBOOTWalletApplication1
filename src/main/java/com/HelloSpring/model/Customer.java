@@ -58,4 +58,6 @@ public class Customer {
 	@OneToMany(targetEntity=Account.class,mappedBy="customer")
 	private List<Account> accoutns=new ArrayList<Account>();
 
+	private String validationMessage;
+
 }

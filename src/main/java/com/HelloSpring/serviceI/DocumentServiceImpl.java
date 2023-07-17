@@ -94,7 +94,6 @@ public class DocumentServiceImpl implements DocumentService {
 
         byte[] images = Files.readAllBytes(omg);
          return images;
-
     }
 
 

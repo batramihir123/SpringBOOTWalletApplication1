@@ -55,7 +55,9 @@ public class CustomerRequestDto {
 	 @NotBlank(message = "Pincode name should not be blank")
 	 @NotNull(message="Pincode name should not be null")
 	 private String pincode;
-	 
-	 
+
+	private String validationMessage;
+
+
 
 }

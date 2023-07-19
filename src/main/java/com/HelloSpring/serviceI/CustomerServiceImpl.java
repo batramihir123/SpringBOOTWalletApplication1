@@ -14,6 +14,7 @@ import java.util.Optional;
 
 import com.HelloSpring.model.*;
 import com.HelloSpring.service.TransactionService;
+import com.HelloSpring.util.PdfHelper;
 import com.HelloSpring.util.SavingBulkCustomer;
 import com.HelloSpring.util.ValidationsExcelCustomer;
 import com.lowagie.text.*;
@@ -370,157 +371,47 @@ public class CustomerServiceImpl implements CustomerService{
 		obj.Saveit(cmr,list1,valid);
 		List<Address> saved= addressRepo.saveAll(list1);
 		List<Customer> savedCustomers = customerRepo.saveAll(cmr);
-		return Invalid;}
+		return Invalid;
+	}
 
 	@Override
-	public ByteArrayInputStream CreatePdf(int customerId){
+	public ByteArrayInputStream CreatePdf(int customerId) {
 		log.info("Here the Pdf is being Created");
-		Customer cust = customerRepo.findById(customerId)
-				.orElseThrow(() -> new ResourceNotFoundException("Customer Not Exist"));
-
-		String title = "Customer Detailed Information Tables";
-
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		Document document = new Document(PageSize.A4);
 		try {
 			PdfWriter writer = PdfWriter.getInstance(document, out);
 			document.open();
-
-			Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20);
-			Paragraph titlePara = new Paragraph(title, titleFont);
-			titlePara.setAlignment(Element.ALIGN_CENTER);
-			document.add(titlePara);
-
+// Here to add the  Customer General Details Function is Called
+			PdfHelper pdfHelper = new PdfHelper();
+			pdfHelper.helper1(customerId,customerRepo,document);
+// Here the function to add the Address Details Called
+			PdfHelper pdfHelper1 = new PdfHelper();
+			pdfHelper1.helper2(customerId,customerRepo,document);
+// Here is the table getting Created
 			PdfPTable table = new PdfPTable(5);
 			table.setWidthPercentage(100f);
 			table.setWidths(new float[]{1, 1, 1, 1, 1});
 			table.setSpacingBefore(5);
 
-			PdfPCell cell = new PdfPCell();
-			cell.setBackgroundColor(CMYKColor.MAGENTA);
-			cell.setPadding(5);
-			Font font = FontFactory.getFont(FontFactory.TIMES_ROMAN);
-			font.setColor(CMYKColor.WHITE);
-			cell.setPhrase(new Phrase("CustomerId", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("FirstName", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("LastName", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("Gender", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("EmailID", font));
-			table.addCell(cell);
-
-			table.addCell(String.valueOf(cust.getCustomerId()));
-			table.addCell(cust.getFirstName());
-			table.addCell(cust.getLastName());
-			table.addCell(cust.getGender().toString());
-			table.addCell(cust.getEmailId());
-
-/*
-Here the Address table is getting added
- */
-			Address as = cust.getAddress();
-			font.setColor(CMYKColor.WHITE);
-			cell.setPhrase(new Phrase("AddressLine1", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("AddressLine2", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("City", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("State", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("Pincode", font));
-			table.addCell(cell);
-
-			table.addCell(as.getAddressLine1());
-			table.addCell(as.getAddressLine2());
-			table.addCell(as.getCity());
-			table.addCell(as.getState());
-			table.addCell(as.getPincode());
-
-
-			/*
-			Now Here the Accounts Table is getting Added ............
-			 */
-
-
-			List<Account> am = cust.getAccoutns();
-			font.setColor(CMYKColor.WHITE);
-			cell.setPhrase(new Phrase("AccountNumber", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("AccountType", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("Description", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("OpeningBalance", font));
-			table.addCell(cell);
-			cell.setPhrase(new Phrase("OpeningDate", font));
-			table.addCell(cell);
-
+// Here Function Called to Add the Customer Account Details Table
 			List<Integer> Accoutnum = new ArrayList<>();
+			PdfHelper pdfHelper3 = new PdfHelper();
+			pdfHelper3.helper3(customerId, Accoutnum, table, customerRepo);
 
-			for(Account aj :am)
-			{
-				table.addCell(String.valueOf(aj.getAccountNumber()));
-				table.addCell(aj.getAccountType().toString());
-				table.addCell(aj.getDescription());
-				table.addCell(String.valueOf(aj.getOpeningBalance()));
-				table.addCell(aj.getOpeningDate().toString());
-
-				Accoutnum.add(aj.getAccountNumber());
-			}
-
-			for(Integer ac : Accoutnum) {
-
-				List<Transaction> transactions = transactionService.getTransactionsByAccountNumber(ac);
-
-				for(Transaction transaction : transactions)
-				{
-
-					font.setColor(CMYKColor.WHITE);
-					cell.setPhrase(new Phrase("Description", font));
-					table.addCell(cell);
-					cell.setPhrase(new Phrase("TransactionType", font));
-					table.addCell(cell);
-					cell.setPhrase(new Phrase("TO_Account", font));
-					table.addCell(cell);
-					cell.setPhrase(new Phrase("From_Account", font));
-					table.addCell(cell);
-					cell.setPhrase(new Phrase("Amount", font));
-					table.addCell(cell);
-
-
-					table.addCell(transaction.getDescription());
-					table.addCell(transaction.getTransactiontype().toString());
-					if (transaction.getToAccount() != null) {
-						table.addCell(transaction.getToAccount().toString());
-					} else {
-						table.addCell("0");
-					}
-
-					if (transaction.getFromAccount() != null) {
-						table.addCell(transaction.getFromAccount().toString());
-					} else {
-						table.addCell("0");
-					}
-					table.addCell(String.valueOf(transaction.getAmount()));
-
-				}
-			}
+// Here Transaction table is getting created by calling the function
+			PdfHelper pdfHelper2 = new PdfHelper();
+			pdfHelper2.helper4(customerId,Accoutnum,table,customerRepo,transactionService);
 
 			document.add(table);
-
-		}
-		catch (DocumentException e) {
+		} catch (DocumentException e) {
 			String errorMessage = "Error occurred while creating the PDF document: " + e.getMessage();
 			log.error(errorMessage);
 			throw new RuntimeException(errorMessage, e);
 		} finally {
 			document.close();
 		}
-
 		return new ByteArrayInputStream(out.toByteArray());
+
 	}
 }

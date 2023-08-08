@@ -4,6 +4,7 @@ package com.HelloSpring.service;
 
 
 import com.HelloSpring.apiresponse.ApiResponse1;
+import com.HelloSpring.apiresponse.AuthenticationResponse;
 import com.HelloSpring.dto.request.CustomerFnmLnmGenderDTO;
 import com.HelloSpring.dto.request.CustomerLoginDTO;
 import com.HelloSpring.dto.request.CustomerRequestDto;
@@ -36,7 +37,8 @@ public interface CustomerService {
 	public List<Customer> findByFirstNameIgnoreCase(String fn);
 	public List<CustomerFnmLnmGenderDTO> findByLastName(String lnm);
 	Boolean existsByEmailIdAndPassword(String email, String password);
-	public ApiResponse1 display(Integer PageNo,Integer pageSize);
+	public ApiResponse1 display( Integer PageNo,Integer pageSize,String sortBy , String sortDirection
+	, String firstName , String lastName , String emailId);
 
 	public void sendmail(String toMail, String Subject , String Body);
 
@@ -45,4 +47,6 @@ public interface CustomerService {
 	public List<CustomerRequestDto>  convertExcelTOCustomerList(MultipartFile file) throws Exception;
 
 	public ByteArrayInputStream CreatePdf(int customerId);
+
+
 }

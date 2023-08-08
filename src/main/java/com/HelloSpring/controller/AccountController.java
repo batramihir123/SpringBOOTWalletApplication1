@@ -7,6 +7,11 @@ package com.HelloSpring.controller;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.HelloSpring.GlobalException.UnAuthorizedUser;
+import com.HelloSpring.model.Customer;
+import com.HelloSpring.repo.CustomerRepo;
+import com.HelloSpring.security.config.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,10 +41,27 @@ public class AccountController {
 	AccountService acr;
 	@Autowired
 	AccountRepo ar;
+	@Autowired
+	JwtService jwtService;
+	@Autowired
+	CustomerRepo customerRepo;
 	@PostMapping(value="/create")
-	public ResponseEntity<ApiResponse> createAccount(@RequestBody @Valid AccountRequestDto accountRequest)
-	{
+	public ResponseEntity<ApiResponse> createAccount(@RequestBody @Valid AccountRequestDto accountRequest,
+													 HttpServletRequest request) throws UnAuthorizedUser {
 		log.info("creating a new Account");
+		String header = request.getHeader("Authorization").substring(7);
+		String mail = jwtService.extractUsername(header);
+		log.info(mail);
+		Customer customer = customerRepo.findById(accountRequest.getCustomerid()).orElseThrow();
+		String email = customer.getEmailId();
+		log.info(email);
+		if(!mail.equals(email)){
+			log.info("UnAuthorizedUser Exception occurred");
+			ApiResponse apiresponse=new ApiResponse(HttpStatus.UNAUTHORIZED.value(),  "Unauthorized User", email);
+			return new ResponseEntity<ApiResponse>(apiresponse,HttpStatus.OK);
+//			throw new UnAuthorizedUser("UnAuthorized User");
+		}
+
 		System.out.println(accountRequest);//AccountRequestDTO(accountNumber=1, customerId=1, accountType=CURRENT, openingBalance=10, openingDate=2022-09-29, description=desc)
 		
 		Account accountNumber=acr.saveAccount(accountRequest);

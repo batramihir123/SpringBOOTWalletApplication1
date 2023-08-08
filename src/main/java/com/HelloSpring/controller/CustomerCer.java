@@ -3,16 +3,28 @@ package com.HelloSpring.controller;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
+
+import com.HelloSpring.GlobalException.UnAuthorizedUser;
+import com.HelloSpring.aop.ValidFrequencyWRTDays;
+import com.HelloSpring.aop.ValidateCustomerId;
+import com.HelloSpring.apiresponse.AuthenticationResponse;
 import com.HelloSpring.dto.request.*;
 
+import com.HelloSpring.repo.CustomerRepo;
+import com.HelloSpring.security.config.JwtService;
+import com.HelloSpring.serviceI.AuthService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.HelloSpring.apiresponse.ApiResponse;
@@ -31,9 +43,19 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping(value = "/customer")
 @Slf4j
+@Validated
 public class CustomerCer {
 	@Autowired(required = false)
 	CustomerService customerservice;
+
+	@Autowired
+	AuthService authService;
+
+	@Autowired
+	JwtService jwtService;
+	@Autowired
+	CustomerRepo customerRepo;
+
 	@Autowired(required = false)
 	AddressService addressservice;
 	
@@ -81,18 +103,33 @@ public class CustomerCer {
    	 return new ResponseEntity<ApiResponse> (apiresponse,HttpStatus.OK);	 
     }
     
-    @GetMapping(value = "/display")
+    @PostMapping(value = "/display")
     public ResponseEntity<ApiResponse> display(
-    		@RequestParam (value="PageNo",defaultValue = "0") Integer PageNo,
-    		@RequestParam (value="PageSize",defaultValue = "5") Integer PageSize
-    		) 
-    {
-		ApiResponse1 custom = customerservice.display(PageNo,PageSize);
-		 ApiResponse apiresponse = new ApiResponse(HttpStatus.OK.value(),"LastName user is there",custom);
+			@RequestParam (value="PageNo") Integer PageNo,
+			@RequestParam (value="PageSize") Integer PageSize,
+			@RequestParam(value = "sortBy", defaultValue = "customerId", required = false) String sortBy,
+			@RequestParam(value = "sortDirection", defaultValue = "asc", required = false) String sortDirection,
+			@RequestParam(value = "firstName", required = false) String firstName,
+			@RequestParam(value = "lastName", required = false) String lastName,
+			@RequestParam(value = "emailId", required = false) String emailId
+
+	, HttpServletRequest request) throws ServletException, IOException {
+
+		final String authHeader = request.getHeader("Authorization");
+		if (authHeader == null ||!authHeader.startsWith("Bearer ")) {
+			throw new UnAuthorizedUser("UnAuthorizedUser");
+		}
+
+		ApiResponse1 custom = customerservice.display(PageNo,PageSize,sortBy,sortDirection,firstName,lastName,emailId);
+		if (custom == null) {
+			log.info("no record found");
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+		 ApiResponse apiresponse = new ApiResponse(HttpStatus.OK.value(),"Here is the Page ",custom);
 	   	 return new ResponseEntity<ApiResponse> (apiresponse,HttpStatus.OK);
     }
 	@GetMapping(value = "/download")
-	public ResponseEntity<Resource> AddingUser() throws IOException
+	public ResponseEntity<Resource> addingUser() throws IOException
 	{
 		Workbook workbook = customerservice.AddingUserToExcel();
 
@@ -119,9 +156,17 @@ public class CustomerCer {
 	}
 
 
-	@GetMapping(value = "/Createpdf/{customerId}")
-	public ResponseEntity<byte[]> createPdf(@PathVariable  int customerId)
-	{
+	@GetMapping("/createPdf/{customerId}")
+	public ResponseEntity<byte[]> createPdf(@PathVariable @ValidateCustomerId Integer customerId,
+											HttpServletRequest request) throws UnAuthorizedUser {
+String header = request.getHeader("Authorization").substring(7);
+String mail = jwtService.extractUsername(header);
+Customer customer = customerRepo.findById(customerId).orElseThrow();
+String email = customer.getEmailId();
+if(mail.equals(email)){
+	throw new UnAuthorizedUser("UnAuthorizedUser");
+}
+		log.info(".........................................................2");
 		ByteArrayInputStream pdf = customerservice.CreatePdf(customerId);
 		HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.add("Content-Disposition","inline;filename=lcwd.pdf");
@@ -139,7 +184,34 @@ public class CustomerCer {
 				.body(pdfBytes);
 	}
 
-     
+	@PostMapping(value = "/authenticate")
+	public ResponseEntity<ApiResponse> authenticate(
+			@RequestBody CustomerLoginDTO customerLoginDTO
+	) {
+
+		ApiResponse apiResponse = new ApiResponse(HttpStatus.OK.value(), "Customer login Successfully", authService.authenticate(customerLoginDTO));
+		return new ResponseEntity<>(apiResponse,HttpStatus.OK);
+	}
+
+	@GetMapping(value = "/downloadPdf")
+	public ResponseEntity<byte[]> downloadPdf(@RequestBody @ValidFrequencyWRTDays RequestBodyDto requestBodyDto)
+	{
+		ByteArrayInputStream pdf = customerservice.CreatePdf(requestBodyDto.getCustomerId());
+		HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.add("Content-Disposition","inline;filename=lcwd.pdf");
+		byte[] pdfBytes;
+		try {
+			pdfBytes = IOUtils.toByteArray(pdf);
+		} catch (IOException e) {
+			// Handle the exception appropriately
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+		return ResponseEntity
+				.ok()
+				.headers(httpHeaders)
+				.contentType(MediaType.APPLICATION_PDF)
+				.body(pdfBytes);
+	}
 }
 
 

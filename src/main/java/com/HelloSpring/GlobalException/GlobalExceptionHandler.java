@@ -17,24 +17,33 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GlobalExceptionHandler {
 
-	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	@ResponseStatus(HttpStatus.UNAUTHORIZED)
+	@ExceptionHandler(UnAuthorizedUser.class)
+	public ResponseEntity<ApiResponse> handleUnAuthorizedUser(EntityAlreadyExistException ex,
+																		  WebRequest webRequest)
+	{
+		log.info("handleUnAuthorizedUser fired");
+		return new ResponseEntity<>(new ApiResponse(HttpStatus.UNAUTHORIZED.value(),  ex.getMessage()),
+				HttpStatus.UNAUTHORIZED);
+	}
+
+
     @ExceptionHandler(EntityAlreadyExistException.class)
     public ResponseEntity<ApiResponse> handleEntityAlreadyExistsException(EntityAlreadyExistException ex,
                                                                           WebRequest webRequest) 
     {
     	log.info("handleEntityAlreadyExistsException fired");
-        return new ResponseEntity<>(new ApiResponse(HttpStatus.NOT_ACCEPTABLE.value(), ex.getMessage()),
+        return new ResponseEntity<>(new ApiResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage()),
                 HttpStatus.BAD_REQUEST);
     }
 	
-	 @ResponseStatus(HttpStatus.NOT_FOUND)
+
 	 @ExceptionHandler(ResourceNotFoundException.class)
-	   
 	    public ResponseEntity<ApiResponse> handleResourecNotFoundExecption(ResourceNotFoundException ex, WebRequest webRequest) {
 	    	log.info("handleResourecNotFoundExecption fired");
 	    	
-	        return new ResponseEntity<>(new ApiResponse(HttpStatus.NOT_ACCEPTABLE.value(), ex.getMessage()),
-	                HttpStatus.BAD_REQUEST);
+	        return new ResponseEntity<>(new ApiResponse(HttpStatus.UNAUTHORIZED.value(), ex.getMessage()),
+	                HttpStatus.UNAUTHORIZED);
 	    } 
 	
 }

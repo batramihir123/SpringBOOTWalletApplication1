@@ -2,6 +2,7 @@ package com.HelloSpring.model;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
@@ -21,6 +22,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import com.HelloSpring.security.token.Token;
+import com.HelloSpring.security.user.Role;
 
 
 @Data
@@ -29,7 +34,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @Entity
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class,property = "customerId")
-public class Customer {
+public class Customer implements UserDetails {
 	
 	@Id
 	@GeneratedValue
@@ -54,10 +59,41 @@ public class Customer {
 	@Column(name = "expiryDate")
 	private LocalDate expiryDate;
 	
-	
+	@OneToMany(targetEntity = Token.class,mappedBy = "customer")
+	private List<Token> tokens;
+
 	@OneToMany(targetEntity=Account.class,mappedBy="customer")
 	private List<Account> accoutns=new ArrayList<Account>();
 
 	private String validationMessage;
 
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return Role.USER.getAuthorities();
+	}
+
+	@Override
+	public String getUsername() {
+		return emailId;
+	}
+
+	@Override
+	public boolean isAccountNonExpired() {
+		return true;
+	}
+
+	@Override
+	public boolean isAccountNonLocked() {
+		return true;
+	}
+
+	@Override
+	public boolean isCredentialsNonExpired() {
+		return true;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return true;
+	}
 }

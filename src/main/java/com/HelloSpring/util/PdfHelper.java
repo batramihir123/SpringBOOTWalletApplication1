@@ -11,12 +11,10 @@ import com.lowagie.text.*;
 import com.lowagie.text.pdf.CMYKColor;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import static com.HelloSpring.constants.StringConstants.CUSTOMER_DETAILS_TITLE;
 
 public class PdfHelper
 {
@@ -32,7 +30,7 @@ public class PdfHelper
         document.add(titlePara);
 
 
-        String customerDetails = "Customer Details:\n";
+        String customerDetails = CUSTOMER_DETAILS_TITLE;
         customerDetails += "Customer ID: " + customerId + "      " +  "First Name :" + cust.getFirstName()+ "      " +"Last Name:" + cust.getLastName() + "     " + "EmailId:" + cust.getEmailId()  + "  "+ "Gender: " + cust.getGender().toString();
 
         Font detailsFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
@@ -110,7 +108,7 @@ public class PdfHelper
 
     }
 
-    public void helper4(int customerID , List<Integer>Accoutnum,PdfPTable table ,CustomerRepo customerRepo,TransactionService transactionService )
+    public void helper4(List<Integer>Accoutnum,PdfPTable table ,TransactionService transactionService )
     {
         table.setSpacingBefore(5);
         PdfPCell cell = new PdfPCell();

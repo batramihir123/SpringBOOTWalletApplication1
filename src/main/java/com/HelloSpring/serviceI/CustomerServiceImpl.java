@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
 
+import com.HelloSpring.apiresponse.AuthenticationResponse;
 import com.HelloSpring.model.*;
+import com.HelloSpring.util.SearchingHelper;
 import com.HelloSpring.service.TransactionService;
 import com.HelloSpring.util.PdfHelper;
 import com.HelloSpring.util.SavingBulkCustomer;
@@ -32,9 +34,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.HelloSpring.dto.request.CustomerFnmLnmGenderDTO;
@@ -59,6 +63,9 @@ public class CustomerServiceImpl implements CustomerService{
 
 	@Autowired
 	TransactionService transactionService;
+	@Autowired
+	PasswordEncoder passwordEncoder;
+
 
 	@Autowired
 	private JavaMailSender message;
@@ -90,7 +97,7 @@ public class CustomerServiceImpl implements CustomerService{
 		  
 		  
 		  Customer cust=Customer.builder().firstName(crDto.getFirstName()).lastName(crDto.getLastName()).emailId(crDto.getEmailId())
-		    .contactNo(crDto.getContactNo()).address(addCreated).gender(crDto.getGender()).password(crDto.getPassword())
+		    .contactNo(crDto.getContactNo()).address(addCreated).gender(crDto.getGender()).password(passwordEncoder.encode(crDto.getPassword()))
 				  .registerationDate(LocalDate.now()).expiryDate(LocalDate.now().plusDays(days))
 		    
 		    .build();
@@ -137,7 +144,6 @@ public class CustomerServiceImpl implements CustomerService{
 		return customerRepo.save(cust);
 	}
 
-
 	/*
 	Here the customer is getting finded by his firstname
 	 */
@@ -176,7 +182,7 @@ public class CustomerServiceImpl implements CustomerService{
 
 	@Override
 	public List<Customer> findByfirstNameIsContaining(String fnm) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
@@ -220,28 +226,31 @@ public class CustomerServiceImpl implements CustomerService{
 	}
 
 	/*
-	Here the pagination is used to get the no of the pages along with the no of rows you want to
-	and here I have creATED the seprate response to showup the extra details totlelement and all
+	Pageable is the Pagenation object which in terms of Two Integer which is PageNo and PageSize or offset and limjt takes two Integer
+	And other is the String based Sort object which provides two parameters that are SortField and SortDirection like on what basic to
+	Sort and THe Direction here is Ascending and Descending refers whereas Other parameters are Searching Based where we have used the
+	Simple Repo inbuilt Functions ..............
 	 */
 	
-	public ApiResponse1 display(Integer PageNo , Integer PageSize) {
-
-		Pageable p = PageRequest.of(PageNo,PageSize);
-		Page<Customer> pagepost = customerRepo.findAll(p);
-		List<Customer> all = pagepost.getContent();
-	
+	public ApiResponse1 display(Integer PageNo , Integer PageSize,String sortBy, String sortDirection,String firstName,
+								String lastName , String emailId) {
+		Sort sort = sortDirection.equalsIgnoreCase("asc") || sortDirection.equalsIgnoreCase("ascending") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+		Pageable p = PageRequest.of(PageNo, PageSize, sort);
+		Page<Customer> allCustomer ;
+		if (firstName != null || lastName != null || emailId != null) {
+			allCustomer = customerRepo.findByFirstNameIsContainingOrLastNameIsContainingOrEmailIdIsContaining(firstName, lastName, emailId, p);
+		}
+		else { allCustomer = customerRepo.findAll(p);}
+		List<Customer> list = allCustomer.getContent();
 		ApiResponse1 apiresp = new ApiResponse1();
-		apiresp.setContent(all);
-		apiresp.setPageNumber(pagepost.getNumber());
-		apiresp.setPageSize(pagepost.getSize());
-		apiresp.setLastPage(pagepost.isLast());
-		apiresp.setTotalElement(pagepost.getNumberOfElements());
-		apiresp.setTotalPage(pagepost.getTotalPages());
+		apiresp.setContent(list);
+		apiresp.setPageNumber(allCustomer.getNumber());
+		apiresp.setPageSize(allCustomer.getSize());
+		apiresp.setLastPage(allCustomer.isLast());
+		apiresp.setTotalElement(allCustomer.getNumberOfElements());
+		apiresp.setTotalPage(allCustomer.getTotalPages());
 		return apiresp;
-	}
-
-
-	/*
+}/*
 	Here the Scheduler Annotation is applied along with the cron expression to sent the mail
 	after Cetrain period of interval
 	Cron Expression --> * ->seconds->
@@ -267,10 +276,7 @@ public class CustomerServiceImpl implements CustomerService{
 			sendmail(toEmail,"Wallet Account is Expired","Dear Customer" + ""+"Your Account will get Expired on " + C.getExpiryDate()+
 					"Please Get Your Premium Recharge" );
 		}
-	}
-
-
-	/*
+	}/*
 	Here its main java class inbuilt package use to sent the mail along with the functions
 	and the object of mailsender is created to send the particular message
 	 */
@@ -399,9 +405,9 @@ public class CustomerServiceImpl implements CustomerService{
 			PdfHelper pdfHelper3 = new PdfHelper();
 			pdfHelper3.helper3(customerId, Accoutnum, table, customerRepo);
 
-// Here Transaction table is getting created by calling the function
+// Here Transaction table is getting created by calling the funcy
 			PdfHelper pdfHelper2 = new PdfHelper();
-			pdfHelper2.helper4(customerId,Accoutnum,table,customerRepo,transactionService);
+			pdfHelper2.helper4(Accoutnum,table,transactionService);
 
 			document.add(table);
 		} catch (DocumentException e) {
